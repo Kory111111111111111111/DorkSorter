@@ -4,8 +4,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Combobox,
+  ComboboxClear,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxInputGroup,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -26,6 +46,7 @@ import {
 } from "@/lib/dork-builder";
 import {
   KEYWORD_OPERATOR,
+  OPERATORS,
   OPERATOR_GROUPS,
   OPERATOR_MAP,
   type SuggestionBucket,
@@ -33,6 +54,7 @@ import {
 import type { SuggestionEntry, SuggestionKey } from "@/app/api/dorks/suggestions/route";
 import { RISK_BADGE_CLASSES, RISK_LABELS_EMOJI } from "@/lib/risk";
 import { copyToClipboard } from "@/lib/clipboard";
+import { cn } from "@/lib/utils";
 import {
   Copy,
   ExternalLink,
@@ -58,17 +80,21 @@ interface SuggestionsData {
   phrase: SuggestionEntry[];
 }
 
-const SUGGESTION_KEYS: SuggestionKey[] = [
-  "filetype",
-  "site",
-  "inurl",
-  "intitle",
-  "intext",
-  "inanchor",
-  "phrase",
-];
+/** Sentinel Select value for the plain-keyword operator (Base UI rejects ""). */
+const KEYWORD_SENTINEL = "__keyword__";
 
-/** Bucket → datalist id. Only buckets with data get a datalist rendered. */
+/**
+ * Select `items` map so `<Select.Value>` renders human labels instead of raw
+ * values (Base UI shows the raw value unless `items` is provided).
+ */
+const OPERATOR_LABELS: Record<string, string> = Object.fromEntries(
+  OPERATORS.map((op) => [
+    op.value === "" ? KEYWORD_SENTINEL : op.value,
+    `${op.label}${op.deprecated ? " (retired)" : ""}`,
+  ])
+);
+
+/** Map an operator's suggestion bucket to the suggestions response key. */
 function bucketToKey(bucket: SuggestionBucket): SuggestionKey {
   return bucket;
 }
@@ -128,77 +154,135 @@ function RowEditor({
   onRemove: () => void;
 }) {
   const operator = OPERATOR_MAP[row.operator.toLowerCase()] ?? KEYWORD_OPERATOR;
-  const datalistKey = operator.suggestions
+  const suggestionKey = operator.suggestions
     ? bucketToKey(operator.suggestions)
     : null;
-  const entries = datalistKey ? suggestions?.[datalistKey] ?? null : null;
-  const dlId = entries ? `dork-sug-${datalistKey}` : undefined;
+  const entries = suggestionKey ? suggestions?.[suggestionKey] ?? null : null;
+  const suggestionItems = useMemo(
+    () => (entries ? entries.map((e) => e.value) : []),
+    [entries]
+  );
   const isList = isListValue(row.value);
   const nValues = isList ? listLength(row.value) : 0;
-
-  const selectCls =
-    "h-8 rounded-lg border border-input bg-transparent px-2 text-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+  const valueLabel = `Value for ${operator.label || "keyword"}`;
 
   return (
     <div className="flex items-center gap-2">
       {/* Logic */}
-      <select
+      <Select
         value={row.logic}
         disabled={index === 0}
-        onChange={(e) => onChange({ logic: e.target.value as LogicOp })}
-        title={
-          index === 0
-            ? "The first row is always implicit AND"
-            : "How this row combines with the previous one"
-        }
-        className={`${selectCls} w-[74px] shrink-0 disabled:opacity-50 ${
-          row.logic === "NOT"
-            ? "text-red-400"
-            : row.logic === "OR"
-              ? "text-amber-400"
-              : ""
-        }`}
+        onValueChange={(v) => onChange({ logic: v as LogicOp })}
       >
-        <option value="AND">AND</option>
-        <option value="OR">OR</option>
-        <option value="NOT">NOT</option>
-      </select>
+        <SelectTrigger
+          size="sm"
+          title={
+            index === 0
+              ? "The first row is always implicit AND"
+              : "How this row combines with the previous one"
+          }
+          className={cn(
+            "w-[74px] shrink-0 font-mono text-xs",
+            row.logic === "NOT" && "text-red-400",
+            row.logic === "OR" && "text-amber-400"
+          )}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="start" className="min-w-[90px]">
+          <SelectItem value="AND" label="AND">
+            AND
+          </SelectItem>
+          <SelectItem value="OR" label="OR">
+            <span className="text-amber-400">OR</span>
+          </SelectItem>
+          <SelectItem value="NOT" label="NOT">
+            <span className="text-red-400">NOT</span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Operator */}
-      <select
-        value={row.operator}
-        onChange={(e) => onChange({ operator: e.target.value })}
-        title={operator.description}
-        className={`${selectCls} w-[132px] shrink-0 font-mono`}
+      <Select
+        value={row.operator === "" ? KEYWORD_SENTINEL : row.operator}
+        items={OPERATOR_LABELS}
+        onValueChange={(v) =>
+          // Base UI emits null when cleared; the sentinel maps back to keyword.
+          onChange({ operator: !v || v === KEYWORD_SENTINEL ? "" : v })
+        }
       >
-        {OPERATOR_GROUPS.map((group) => (
-          <optgroup key={group.label} label={group.label}>
-            {group.operators.map((op) => (
-              <option key={op.value} value={op.value}>
-                {op.label}
-                {op.deprecated ? " (retired)" : ""}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+        <SelectTrigger
+          size="sm"
+          title={operator.description}
+          className="w-[136px] shrink-0 font-mono text-xs"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="start" className="min-w-[240px]">
+          {OPERATOR_GROUPS.map((group) => (
+            <SelectGroup key={group.label}>
+              <SelectLabel>{group.label}</SelectLabel>
+              {group.operators.map((op) => (
+                <SelectItem
+                  key={op.value}
+                  value={op.value === "" ? KEYWORD_SENTINEL : op.value}
+                  label={`${op.label}${op.deprecated ? " (retired)" : ""}`}
+                >
+                  <span className="font-mono">
+                    {op.label}
+                    {op.deprecated ? " (retired)" : ""}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          ))}
+        </SelectContent>
+      </Select>
 
-      {/* Value */}
-      <div className="relative flex-1 min-w-0">
+      {/* Value — combobox with corpus suggestions, or a plain input */}
+      {suggestionItems.length > 0 ? (
+        <Combobox
+          items={suggestionItems}
+          inputValue={row.value}
+          onInputValueChange={(v) => onChange({ value: v })}
+          onValueChange={(v) => onChange({ value: v ?? "" })}
+        >
+          <ComboboxInputGroup className="flex-1 min-w-0">
+            <ComboboxInput
+              placeholder={operator.placeholder}
+              className="font-mono text-xs"
+              aria-label={valueLabel}
+            />
+            <ComboboxClear aria-label="Clear value" />
+            <ComboboxTrigger aria-label="Show suggestions" />
+          </ComboboxInputGroup>
+          <ComboboxPopup className="min-w-[220px]">
+            <ComboboxEmpty>Keep typing — any value works</ComboboxEmpty>
+            <ComboboxList>
+              {(item) => (
+                <ComboboxItem key={item} value={item}>
+                  <span className="font-mono text-xs">{item}</span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxPopup>
+        </Combobox>
+      ) : (
         <Input
           value={row.value}
           onChange={(e) => onChange({ value: e.target.value })}
           placeholder={operator.placeholder}
-          list={dlId}
-          className="font-mono text-xs pr-14"
-          aria-label={`Value for ${operator.label || "keyword"}`}
+          className="font-mono text-xs flex-1 min-w-0"
+          aria-label={valueLabel}
         />
-        {isList && (
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium pointer-events-none">
-            {nValues} values
-          </span>
-        )}
-      </div>
+      )}
+
+      {/* List badge */}
+      {isList && (
+        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary font-medium">
+          {nValues} values
+        </span>
+      )}
 
       {/* Remove */}
       <Tooltip>
@@ -322,18 +406,6 @@ export function DorkBuilder({ load }: { load: BuilderLoad | null }) {
 
   return (
     <div className="space-y-4">
-      {/* Datalists for value suggestions */}
-      {suggestions &&
-        SUGGESTION_KEYS.map((key) =>
-          suggestions[key].length > 0 ? (
-            <datalist key={key} id={`dork-sug-${key}`}>
-              {suggestions[key].map((s) => (
-                <option key={s.value} value={s.value} />
-              ))}
-            </datalist>
-          ) : null
-        )}
-
       {/* Query rows */}
       <Card>
         <CardContent className="p-4 space-y-2">

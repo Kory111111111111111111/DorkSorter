@@ -20,6 +20,14 @@ import { RISK_LABELS, type RiskLevel } from "@/lib/risk";
 import { parseQuery, withFreshIds } from "@/lib/dork-builder";
 import type { DorkTemplate } from "@/lib/dork-templates";
 
+/** Select `items` map so `<Select.Value>` renders labels, not raw values. */
+const SORT_LABELS: Record<string, string> = {
+  risk: "Risk ↑",
+  query: "A–Z",
+  "query-desc": "Z–A",
+  category: "Category",
+};
+
 export default function Home() {
   const {
     data,
@@ -97,15 +105,27 @@ export default function Home() {
               <Separator orientation="vertical" className="h-5" />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Sort:</span>
-                <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+                <Select
+                  value={sort}
+                  items={SORT_LABELS}
+                  onValueChange={(v) => setSort(v as typeof sort)}
+                >
                   <SelectTrigger className="w-[140px] h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="risk">Risk ↑</SelectItem>
-                    <SelectItem value="query">A–Z</SelectItem>
-                    <SelectItem value="query-desc">Z–A</SelectItem>
-                    <SelectItem value="category">Category</SelectItem>
+                    <SelectItem value="risk" label="Risk ↑">
+                      Risk ↑
+                    </SelectItem>
+                    <SelectItem value="query" label="A–Z">
+                      A–Z
+                    </SelectItem>
+                    <SelectItem value="query-desc" label="Z–A">
+                      Z–A
+                    </SelectItem>
+                    <SelectItem value="category" label="Category">
+                      Category
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
