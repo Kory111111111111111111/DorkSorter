@@ -7,3 +7,16 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Learned User Preferences
+
+- Prefers GitHub setup tasks (Pages, Actions, repo settings) to be done through the GitHub CLI (`gh`) rather than manual web UI steps.
+- Wants changes left local unless they explicitly ask for a commit or push.
+
+## Learned Workspace Facts
+
+- DorkSorter is deployed as a static Next.js export on GitHub Pages; `.github/workflows/pages.yml` deploys on every push to the `main` branch and can also be run manually.
+- There are no API routes at runtime: search, filters, sorting, and builder suggestions all run in the browser against a downloaded dork index.
+- `scripts/ingest-dorks.ts` builds `src/data/dorks.json` from multiple public Google-dork list repos, dropping case-insensitive duplicates, preferring topic files over bulk dumps over `all-google-dorks.txt`, and skipping carding, fraud, shopping, and bulk-dump lists.
+- `scripts/stage-public-data.mjs` converts `src/data/dorks.json` into the compact `public/dorks.json` served to browsers (a label dictionary plus short rows per dork, with `sourceFile` omitted and only its count kept in a manifest).
+- Browse cards show a plain-language "what this query finds" line generated from the same operator parsing the builder uses.

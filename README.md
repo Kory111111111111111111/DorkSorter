@@ -96,7 +96,7 @@ scripts/          ingest-dorks.ts — corpus ingestion pipeline
 
 ## GitHub Pages
 
-Pushes to `dork-builder`, and manual runs of **Deploy to GitHub Pages**, publish
+Pushes to `main`, and manual runs of **Deploy to GitHub Pages**, publish
 a static export. One-time setup in the repo: **Settings → Pages → Build and
 deployment → Source: GitHub Actions**.
 
