@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "DorkSorter — Google Dork Intelligence",
-  description: "Search, sort, and analyze 14,000+ Google dorks by category and risk level",
+  description: "Search, sort, and analyze 90,000+ Google dorks by category and risk level",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
