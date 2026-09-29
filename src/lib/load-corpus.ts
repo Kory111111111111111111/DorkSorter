@@ -1,17 +1,86 @@
 import type { Dork } from "@/lib/dork";
 import { publicPath } from "@/lib/public-path";
+import type { CorpusMeta } from "@/lib/query-dorks";
+import { RISK_ORDER, type RiskLevel } from "@/lib/risk";
 
-let pending: Promise<Dork[]> | null = null;
+export interface LoadedCorpus {
+  dorks: Dork[];
+  meta: CorpusMeta;
+}
 
-/** Fetch the static dork index once and share it across the page. */
-export function loadCorpus(): Promise<Dork[]> {
+interface CompactIndex {
+  sourceFileCount: number;
+  categories: string[];
+  subcategories: string[];
+  tags: string[];
+  risks: string[];
+  rows: Array<[string, number, number, number[], number]>;
+}
+
+let pending: Promise<LoadedCorpus> | null = null;
+
+function isRiskLevel(value: string | undefined): value is RiskLevel {
+  return value !== undefined && (RISK_ORDER as readonly string[]).includes(value);
+}
+
+function expand(index: CompactIndex): LoadedCorpus {
+  const categoryCounts: Record<string, number> = {};
+  const dorks: Dork[] = index.rows.map((row, indexInCorpus) => {
+    const [query, categoryId, subcategoryId, tagIds, riskId] = row;
+    const category = index.categories[categoryId];
+    const subcategory = index.subcategories[subcategoryId];
+    const riskLevel = index.risks[riskId];
+    if (!category || subcategory === undefined || !isRiskLevel(riskLevel)) {
+      throw new Error("Invalid dork index");
+    }
+    const tags = tagIds.map((id) => {
+      const tag = index.tags[id];
+      if (tag === undefined) throw new Error("Invalid dork index");
+      return tag;
+    });
+    categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+    return {
+      id: String(indexInCorpus),
+      query,
+      category,
+      subcategory,
+      tags,
+      riskLevel,
+    };
+  });
+
+  return {
+    dorks,
+    meta: {
+      globalTotal: dorks.length,
+      sourceFileCount: index.sourceFileCount,
+      categoryCounts,
+    },
+  };
+}
+
+function isCompactIndex(value: unknown): value is CompactIndex {
+  if (!value || typeof value !== "object") return false;
+  const index = value as Partial<CompactIndex>;
+  return (
+    typeof index.sourceFileCount === "number" &&
+    Array.isArray(index.categories) &&
+    Array.isArray(index.subcategories) &&
+    Array.isArray(index.tags) &&
+    Array.isArray(index.risks) &&
+    Array.isArray(index.rows)
+  );
+}
+
+/** Fetch the compact dork index once and share the expanded corpus. */
+export function loadCorpus(): Promise<LoadedCorpus> {
   if (!pending) {
     pending = fetch(publicPath("/dorks.json"))
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as { dorks?: unknown };
-        if (!Array.isArray(json.dorks)) throw new Error("Invalid dork index");
-        return json.dorks as Dork[];
+        const json: unknown = await res.json();
+        if (!isCompactIndex(json)) throw new Error("Invalid dork index");
+        return expand(json);
       })
       .catch((err: unknown) => {
         pending = null;

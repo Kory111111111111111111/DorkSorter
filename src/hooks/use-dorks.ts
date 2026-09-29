@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dork } from "@/lib/dork";
 import { loadCorpus } from "@/lib/load-corpus";
-import { queryDorks, summarizeCorpus, type DorkQueryResult, type SortField } from "@/lib/query-dorks";
+import { queryDorks, type CorpusMeta, type DorkQueryResult, type SortField } from "@/lib/query-dorks";
 
 export type { Dork } from "@/lib/dork";
 export type { SortField, DorkQueryResult as DorksResponse } from "@/lib/query-dorks";
@@ -12,12 +12,13 @@ const PER_PAGE = 50;
 
 export function useDorks() {
   const [corpus, setCorpus] = useState<Dork[] | null>(null);
+  const [meta, setMeta] = useState<CorpusMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [risk, setRisk] = useState("");
   const [tag, setTag] = useState("");
   const [sort, setSortState] = useState<SortField>("risk");
@@ -28,9 +29,10 @@ export function useDorks() {
   useEffect(() => {
     let cancelled = false;
     loadCorpus()
-      .then((dorks) => {
+      .then((loaded) => {
         if (cancelled) return;
-        setCorpus(dorks);
+        setCorpus(loaded.dorks);
+        setMeta(loaded.meta);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -51,20 +53,18 @@ export function useDorks() {
     };
   }, []);
 
-  const meta = useMemo(() => (corpus ? summarizeCorpus(corpus) : null), [corpus]);
-
   const data: DorkQueryResult | null = useMemo(() => {
     if (!corpus || !meta) return null;
     return queryDorks(corpus, meta, {
       query: debouncedQuery,
-      category,
+      categories,
       risk,
       tag,
       sort,
       page,
       perPage: PER_PAGE,
     });
-  }, [corpus, meta, debouncedQuery, category, risk, tag, sort, page]);
+  }, [corpus, meta, debouncedQuery, categories, risk, tag, sort, page]);
 
   const setSearchQuery = (q: string) => {
     setQuery(q);
@@ -75,9 +75,19 @@ export function useDorks() {
     }, 200);
   };
 
-  const setCategoryFilter = (c: string) => {
-    setCategory(c);
+  const setCategoryFilter = (category: string, shiftKey: boolean) => {
     setPageState(1);
+    if (!category) {
+      setCategories([]);
+      return;
+    }
+    if (!shiftKey) {
+      setCategories((prev) => (prev.length === 1 && prev[0] === category ? [] : [category]));
+      return;
+    }
+    setCategories((prev) =>
+      prev.includes(category) ? prev.filter((item) => item !== category) : [...prev, category],
+    );
   };
 
   const setRiskFilter = (r: string) => {
@@ -101,7 +111,7 @@ export function useDorks() {
 
   const clearAll = () => {
     setQuery("");
-    setCategory("");
+    setCategories([]);
     setRisk("");
     setTag("");
     setPageState(1);
@@ -116,7 +126,7 @@ export function useDorks() {
     error,
     query,
     setSearchQuery,
-    category,
+    categories,
     setCategoryFilter,
     risk,
     setRiskFilter,

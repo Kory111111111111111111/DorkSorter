@@ -16,8 +16,8 @@ interface SidebarProps {
   onViewChange: (v: AppView) => void;
   query: string;
   onQueryChange: (q: string) => void;
-  category: string;
-  onCategoryChange: (c: string) => void;
+  categories: readonly string[];
+  onCategoryChange: (category: string, shiftKey: boolean) => void;
   risk: string;
   onRiskChange: (r: string) => void;
   tag: string;
@@ -60,7 +60,7 @@ export function Sidebar({
   onViewChange,
   query,
   onQueryChange,
-  category,
+  categories,
   onCategoryChange,
   risk,
   onRiskChange,
@@ -71,7 +71,7 @@ export function Sidebar({
   data,
 }: SidebarProps) {
   const { dark, toggle: toggleDark } = useDarkMode();
-  const hasFilters = query || category || risk || tag;
+  const hasFilters = query || categories.length > 0 || risk || tag;
 
   const sortedCategories = data
     ? Object.entries(data.categoryCounts).sort((a, b) => b[1] - a[1])
@@ -203,12 +203,16 @@ export function Sidebar({
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
                   Categories
                 </h3>
-                <p className="text-[10px] text-muted-foreground/70 mb-2">all dorks</p>
+                <p className="text-[10px] text-muted-foreground/70 mb-2">
+                  shift-click to select more
+                </p>
                 <div className="space-y-0.5">
                   <button
-                    onClick={() => onCategoryChange("")}
+                    onClick={() => onCategoryChange("", false)}
                     className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors flex items-center justify-between ${
-                      !category ? "bg-primary/10 text-primary font-medium" : "hover:bg-accent text-foreground/80"
+                      categories.length === 0
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-accent text-foreground/80"
                     }`}
                   >
                     <span>All Categories</span>
@@ -219,9 +223,12 @@ export function Sidebar({
                   {sortedCategories.map(([cat, count]) => (
                     <button
                       key={cat}
-                      onClick={() => onCategoryChange(category === cat ? "" : cat)}
+                      onMouseDown={(event) => {
+                        if (event.shiftKey) event.preventDefault();
+                      }}
+                      onClick={(event) => onCategoryChange(cat, event.shiftKey)}
                       className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors flex items-center justify-between ${
-                        category === cat
+                        categories.includes(cat)
                           ? "bg-primary/10 text-primary font-medium"
                           : "hover:bg-accent text-foreground/80"
                       }`}

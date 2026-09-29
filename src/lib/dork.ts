@@ -6,6 +6,5 @@ export interface Dork {
   category: string;
   subcategory: string;
   tags: string[];
-  sourceFile: string;
   riskLevel: RiskLevel;
 }

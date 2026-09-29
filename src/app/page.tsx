@@ -35,7 +35,7 @@ export default function Home() {
     error,
     query,
     setSearchQuery,
-    category,
+    categories,
     setCategoryFilter,
     risk,
     setRiskFilter,
@@ -72,7 +72,7 @@ export default function Home() {
         onViewChange={setView}
         query={query}
         onQueryChange={setSearchQuery}
-        category={category}
+        categories={categories}
         onCategoryChange={setCategoryFilter}
         risk={risk}
         onRiskChange={setRiskFilter}
@@ -92,7 +92,11 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-primary" />
                 <span className="text-sm text-muted-foreground">
-                  {category || "All Categories"}
+                  {categories.length === 0
+                    ? "All Categories"
+                    : categories.length === 1
+                      ? categories[0]
+                      : `${categories[0]} + ${categories.length - 1} more`}
                   {risk && ` · ${RISK_LABELS[risk as RiskLevel]}`}
                   {tag && ` · #${tag}`}
                 </span>
@@ -165,7 +169,7 @@ export default function Home() {
                   <SearchX size={40} className="mx-auto mb-4 opacity-40" />
                   <p className="text-lg font-medium">No dorks found</p>
                   <p className="text-sm mt-1">Try adjusting your search or filters</p>
-                  {(query || category || risk || tag) && (
+                  {(query || categories.length > 0 || risk || tag) && (
                     <button
                       onClick={clearAll}
                       className="mt-3 text-xs text-primary hover:underline"

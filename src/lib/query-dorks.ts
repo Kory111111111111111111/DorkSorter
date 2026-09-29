@@ -10,7 +10,7 @@ export interface CorpusMeta {
 
 export interface DorkQuery {
   query: string;
-  category: string;
+  categories: readonly string[];
   risk: string;
   tag: string;
   sort: SortField;
@@ -38,20 +38,6 @@ const RISK_ORDER: Record<string, number> = {
   info: 4,
 };
 
-export function summarizeCorpus(dorks: Dork[]): CorpusMeta {
-  const categoryCounts: Record<string, number> = {};
-  const sourceFiles = new Set<string>();
-  for (const dork of dorks) {
-    categoryCounts[dork.category] = (categoryCounts[dork.category] ?? 0) + 1;
-    sourceFiles.add(dork.sourceFile);
-  }
-  return {
-    globalTotal: dorks.length,
-    sourceFileCount: sourceFiles.size,
-    categoryCounts,
-  };
-}
-
 export function queryDorks(dorks: Dork[], meta: CorpusMeta, params: DorkQuery): DorkQueryResult {
   const query = params.query.toLowerCase();
   const page = Math.max(1, params.page);
@@ -65,13 +51,13 @@ export function queryDorks(dorks: Dork[], meta: CorpusMeta, params: DorkQuery): 
         dork.query.toLowerCase().includes(query) ||
         dork.category.toLowerCase().includes(query) ||
         dork.subcategory.toLowerCase().includes(query) ||
-        dork.tags.some((tag) => tag.includes(query)) ||
-        dork.sourceFile.toLowerCase().includes(query)
+        dork.tags.some((tag) => tag.includes(query))
     );
   }
 
-  if (params.category) {
-    results = results.filter((dork) => dork.category === params.category);
+  if (params.categories.length > 0) {
+    const selected = new Set(params.categories);
+    results = results.filter((dork) => selected.has(dork.category));
   }
 
   if (params.risk) {

@@ -328,7 +328,7 @@ export function DorkBuilder({ load }: { load: BuilderLoad | null }) {
     const controller = new AbortController();
     (async () => {
       try {
-        const dorks = await loadCorpus();
+        const { dorks } = await loadCorpus();
         if (controller.signal.aborted) return;
         setSuggestions(mineSuggestions(dorks));
       } catch (err: unknown) {

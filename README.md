@@ -10,15 +10,17 @@ heuristics, tags each query with its technique, and assigns a risk level
 
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS v4 + shadcn/ui (Base UI primitives)
-- Single static dataset (`src/data/dorks.json`). The browser downloads it once
-  and runs search, filter, sort, and pagination locally so the site can be
-  hosted on GitHub Pages
+- Single static dataset (`src/data/dorks.json`). The build writes a compact
+  index to `public/dorks.json` (dictionary of labels, one short row per dork).
+  The browser downloads that once and runs search, filter, sort, and pagination
+  locally so the site can be hosted on GitHub Pages
 
 ## Features
 
 ### Browse
 
-- Live search (debounced), filter by category / risk level / tag
+- Live search (debounced), filter by category / risk level / tag. Shift-click
+  categories in the sidebar to select more than one
 - Sort by risk, A–Z, Z–A, or category
 - Copy any dork or open it directly in Google search
 - Click any tag chip to filter the whole corpus by that tag
