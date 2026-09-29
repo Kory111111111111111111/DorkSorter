@@ -51,7 +51,8 @@ import {
   OPERATOR_MAP,
   type SuggestionBucket,
 } from "@/lib/dork-operators";
-import type { SuggestionEntry, SuggestionKey } from "@/app/api/dorks/suggestions/route";
+import { mineSuggestions, type SuggestionEntry, type SuggestionKey } from "@/lib/corpus-suggestions";
+import { loadCorpus } from "@/lib/load-corpus";
 import { RISK_BADGE_CLASSES, RISK_LABELS_EMOJI } from "@/lib/risk";
 import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
@@ -327,11 +328,9 @@ export function DorkBuilder({ load }: { load: BuilderLoad | null }) {
     const controller = new AbortController();
     (async () => {
       try {
-        const res = await fetch("/api/dorks/suggestions", {
-          signal: controller.signal,
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setSuggestions(await res.json());
+        const dorks = await loadCorpus();
+        if (controller.signal.aborted) return;
+        setSuggestions(mineSuggestions(dorks));
       } catch (err: unknown) {
         if ((err as Error)?.name === "AbortError") return;
         setSuggestionsError(true);

@@ -43,3 +43,9 @@ next-env.d.ts
 # local tooling / agent session state
 .freebuff/
 .agents/
+
+# cloned dork corpora; the app reads the generated src/data/dorks.json
+/sources/
+
+# staged copy of src/data/dorks.json for the static export
+/public/dorks.json

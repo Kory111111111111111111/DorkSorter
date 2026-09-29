@@ -19,7 +19,7 @@ export type OperatorKind =
   | "proximity"
   | "other";
 
-/** Corpus suggestion buckets served by /api/dorks/suggestions. */
+/** Corpus suggestion buckets mined from the dork index. */
 export type SuggestionBucket =
   | "filetype"
   | "site"

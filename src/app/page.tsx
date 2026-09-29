@@ -145,7 +145,7 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto">
           {/* Browse view */}
           <div className={view === "browse" ? "block" : "hidden"}>
-            <div className="p-4 max-w-4xl">
+            <div className="p-4">
               {error && !loading && (
                 <div className="flex items-center gap-2 p-4 text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-300 rounded-lg mb-4">
                   <AlertCircle size={16} />
@@ -156,7 +156,7 @@ export default function Home() {
               {loading && (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 size={24} className="animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Searching dorks...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">Loading dork index…</span>
                 </div>
               )}
 
@@ -178,7 +178,7 @@ export default function Home() {
 
               {!loading && data && (
                 <>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {data.dorks.map((dork) => (
                       <DorkCard
                         key={dork.id}
