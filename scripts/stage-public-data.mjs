@@ -29,7 +29,10 @@ function intern(list, map, value) {
   return id;
 }
 
-const rows = raw.dorks.map((dork) => {
+const rows = raw.dorks.map((dork, index) => {
+  if (typeof dork.query !== "string" || typeof dork.category !== "string" || typeof dork.subcategory !== "string") {
+    throw new Error(`Invalid dork at index ${index}`);
+  }
   if (typeof dork.sourceFile === "string") sourceFiles.add(dork.sourceFile);
   const risk = RISKS.indexOf(dork.riskLevel);
   if (risk < 0) throw new Error(`Unknown risk level: ${dork.riskLevel}`);

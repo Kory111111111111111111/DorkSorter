@@ -15,6 +15,7 @@ export function useDorks() {
   const [meta, setMeta] = useState<CorpusMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -45,7 +46,7 @@ export function useDorks() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     return () => {
@@ -65,6 +66,12 @@ export function useDorks() {
       perPage: PER_PAGE,
     });
   }, [corpus, meta, debouncedQuery, categories, risk, tag, sort, page]);
+
+  const retryLoad = () => {
+    setLoading(true);
+    setError(null);
+    setLoadAttempt((attempt) => attempt + 1);
+  };
 
   const setSearchQuery = (q: string) => {
     setQuery(q);
@@ -117,7 +124,6 @@ export function useDorks() {
     setPageState(1);
     if (queryTimer.current) clearTimeout(queryTimer.current);
     setDebouncedQuery("");
-    setError(null);
   };
 
   return {
@@ -137,5 +143,6 @@ export function useDorks() {
     page,
     setPage,
     clearAll,
+    retryLoad,
   };
 }

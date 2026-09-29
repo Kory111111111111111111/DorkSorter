@@ -8,7 +8,8 @@
     "prebuild": "node scripts/stage-public-data.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test src/lib/query-dorks.test.ts src/lib/load-corpus.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -31,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

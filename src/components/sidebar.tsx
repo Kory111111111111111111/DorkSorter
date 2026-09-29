@@ -209,6 +209,7 @@ export function Sidebar({
                 <div className="space-y-0.5">
                   <button
                     onClick={() => onCategoryChange("", false)}
+                    aria-pressed={categories.length === 0}
                     className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors flex items-center justify-between ${
                       categories.length === 0
                         ? "bg-primary/10 text-primary font-medium"
@@ -227,6 +228,7 @@ export function Sidebar({
                         if (event.shiftKey) event.preventDefault();
                       }}
                       onClick={(event) => onCategoryChange(cat, event.shiftKey)}
+                      aria-pressed={categories.includes(cat)}
                       className={`w-full text-left text-xs px-2 py-1.5 rounded-md transition-colors flex items-center justify-between ${
                         categories.includes(cat)
                           ? "bg-primary/10 text-primary font-medium"

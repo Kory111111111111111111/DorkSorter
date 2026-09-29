@@ -46,6 +46,7 @@ export default function Home() {
     page,
     setPage,
     clearAll,
+    retryLoad,
   } = useDorks();
 
   const [view, setView] = useState<AppView>("browse");
@@ -153,7 +154,10 @@ export default function Home() {
               {error && !loading && (
                 <div className="flex items-center gap-2 p-4 text-sm text-red-600 bg-red-50 dark:bg-red-950 dark:text-red-300 rounded-lg mb-4">
                   <AlertCircle size={16} />
-                  {error}
+                  <span className="flex-1">{error}</span>
+                  <button onClick={retryLoad} className="text-xs underline">
+                    Retry
+                  </button>
                 </div>
               )}
 
@@ -180,7 +184,7 @@ export default function Home() {
                 </div>
               )}
 
-              {!loading && data && (
+              {!loading && data && data.dorks.length > 0 && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {data.dorks.map((dork) => (
@@ -224,7 +228,7 @@ export default function Home() {
 
           {/* Builder view — kept mounted so in-progress work survives tab switches */}
           <div className={view === "builder" ? "block" : "hidden"}>
-            <div className="p-4 max-w-4xl">
+            <div className="p-4">
               <DorkBuilder load={builderLoad} />
             </div>
           </div>

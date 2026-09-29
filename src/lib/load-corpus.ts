@@ -23,14 +23,30 @@ function isRiskLevel(value: string | undefined): value is RiskLevel {
   return value !== undefined && (RISK_ORDER as readonly string[]).includes(value);
 }
 
+function readRow(row: unknown): [string, number, number, number[], number] {
+  if (!Array.isArray(row) || row.length !== 5) throw new Error("Invalid dork index");
+  const [query, categoryId, subcategoryId, tagIds, riskId] = row;
+  if (
+    typeof query !== "string" ||
+    !Number.isInteger(categoryId) ||
+    !Number.isInteger(subcategoryId) ||
+    !Number.isInteger(riskId) ||
+    !Array.isArray(tagIds) ||
+    tagIds.some((id) => !Number.isInteger(id))
+  ) {
+    throw new Error("Invalid dork index");
+  }
+  return [query, categoryId, subcategoryId, tagIds, riskId];
+}
+
 function expand(index: CompactIndex): LoadedCorpus {
   const categoryCounts: Record<string, number> = {};
   const dorks: Dork[] = index.rows.map((row, indexInCorpus) => {
-    const [query, categoryId, subcategoryId, tagIds, riskId] = row;
+    const [query, categoryId, subcategoryId, tagIds, riskId] = readRow(row);
     const category = index.categories[categoryId];
     const subcategory = index.subcategories[subcategoryId];
     const riskLevel = index.risks[riskId];
-    if (!category || subcategory === undefined || !isRiskLevel(riskLevel)) {
+    if (category === undefined || subcategory === undefined || !isRiskLevel(riskLevel)) {
       throw new Error("Invalid dork index");
     }
     const tags = tagIds.map((id) => {
@@ -72,6 +88,12 @@ function isCompactIndex(value: unknown): value is CompactIndex {
   );
 }
 
+/** Expand a compact index. Throws if a row does not match the packed shape. */
+export function expandCompactIndex(value: unknown): LoadedCorpus {
+  if (!isCompactIndex(value)) throw new Error("Invalid dork index");
+  return expand(value);
+}
+
 /** Fetch the compact dork index once and share the expanded corpus. */
 export function loadCorpus(): Promise<LoadedCorpus> {
   if (!pending) {
@@ -79,8 +101,7 @@ export function loadCorpus(): Promise<LoadedCorpus> {
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json: unknown = await res.json();
-        if (!isCompactIndex(json)) throw new Error("Invalid dork index");
-        return expand(json);
+        return expandCompactIndex(json);
       })
       .catch((err: unknown) => {
         pending = null;

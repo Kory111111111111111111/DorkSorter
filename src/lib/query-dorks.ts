@@ -1,4 +1,5 @@
 import type { Dork } from "@/lib/dork";
+import { RISK_ORDER, type RiskLevel } from "@/lib/risk";
 
 export type SortField = "risk" | "query" | "query-desc" | "category";
 
@@ -30,16 +31,13 @@ export interface DorkQueryResult {
   riskCounts: Record<string, number>;
 }
 
-const RISK_ORDER: Record<string, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-  info: 4,
-};
+function riskRank(level: RiskLevel): number {
+  const rank = RISK_ORDER.indexOf(level);
+  return rank === -1 ? RISK_ORDER.length : rank;
+}
 
 export function queryDorks(dorks: Dork[], meta: CorpusMeta, params: DorkQuery): DorkQueryResult {
-  const query = params.query.toLowerCase();
+  const query = params.query.trim().toLowerCase();
   const page = Math.max(1, params.page);
   const perPage = Math.min(100, Math.max(20, params.perPage));
 
@@ -51,7 +49,7 @@ export function queryDorks(dorks: Dork[], meta: CorpusMeta, params: DorkQuery): 
         dork.query.toLowerCase().includes(query) ||
         dork.category.toLowerCase().includes(query) ||
         dork.subcategory.toLowerCase().includes(query) ||
-        dork.tags.some((tag) => tag.includes(query))
+        dork.tags.some((tag) => tag.toLowerCase().includes(query))
     );
   }
 
@@ -81,7 +79,7 @@ export function queryDorks(dorks: Dork[], meta: CorpusMeta, params: DorkQuery): 
       sorted.sort((a, b) => a.category.localeCompare(b.category));
       break;
     case "risk":
-      sorted.sort((a, b) => (RISK_ORDER[a.riskLevel] ?? 5) - (RISK_ORDER[b.riskLevel] ?? 5));
+      sorted.sort((a, b) => riskRank(a.riskLevel) - riskRank(b.riskLevel));
       break;
     default: {
       const exhaustive: never = params.sort;
