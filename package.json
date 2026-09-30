@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/stage-public-data.mjs",
+    "predev": "node scripts/stage-public-data.mjs && tsx scripts/write-first-page.ts",
     "dev": "next dev",
-    "prebuild": "node scripts/stage-public-data.mjs",
+    "prebuild": "node scripts/stage-public-data.mjs && tsx scripts/write-first-page.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -1,6 +1,6 @@
 import type { Dork } from "@/lib/dork";
 import { publicPath } from "@/lib/public-path";
-import type { CorpusMeta } from "@/lib/query-dorks";
+import type { CorpusMeta, DorkQueryResult } from "@/lib/query-dorks";
 import { RISK_ORDER, type RiskLevel } from "@/lib/risk";
 
 export interface LoadedCorpus {
@@ -18,6 +18,41 @@ interface CompactIndex {
 }
 
 let pending: Promise<LoadedCorpus> | null = null;
+let pendingFirstPage: Promise<DorkQueryResult | null> | null = null;
+
+function isQueryResult(value: unknown): value is DorkQueryResult {
+  if (!value || typeof value !== "object") return false;
+  const result = value as DorkQueryResult;
+  return (
+    Array.isArray(result.dorks) &&
+    typeof result.total === "number" &&
+    typeof result.page === "number" &&
+    typeof result.perPage === "number" &&
+    typeof result.globalTotal === "number" &&
+    result.categoryCounts !== null &&
+    typeof result.categoryCounts === "object" &&
+    result.riskCounts !== null &&
+    typeof result.riskCounts === "object"
+  );
+}
+
+/** Default first page, or null when the file is missing. A miss must not fail the full index load. */
+export function loadFirstPage(): Promise<DorkQueryResult | null> {
+  if (!pendingFirstPage) {
+    pendingFirstPage = fetch(publicPath("/dorks-first-page.json"))
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const json: unknown = await res.json();
+        return isQueryResult(json) ? json : null;
+      })
+      .catch(() => null)
+      .then((page) => {
+        if (!page) pendingFirstPage = null;
+        return page;
+      });
+  }
+  return pendingFirstPage;
+}
 
 function isRiskLevel(value: string | undefined): value is RiskLevel {
   return value !== undefined && (RISK_ORDER as readonly string[]).includes(value);

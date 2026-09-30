@@ -2,18 +2,23 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dork } from "@/lib/dork";
-import { loadCorpus } from "@/lib/load-corpus";
-import { queryDorks, type CorpusMeta, type DorkQueryResult, type SortField } from "@/lib/query-dorks";
+import { loadCorpus, loadFirstPage } from "@/lib/load-corpus";
+import {
+  browseResult,
+  DEFAULT_BROWSE_QUERY,
+  type CorpusMeta,
+  type DorkQueryResult,
+  type SortField,
+} from "@/lib/query-dorks";
 
 export type { Dork } from "@/lib/dork";
 export type { SortField, DorkQueryResult as DorksResponse } from "@/lib/query-dorks";
 
-const PER_PAGE = 50;
-
 export function useDorks() {
   const [corpus, setCorpus] = useState<Dork[] | null>(null);
   const [meta, setMeta] = useState<CorpusMeta | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState<DorkQueryResult | null>(null);
+  const [corpusSettled, setCorpusSettled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
 
@@ -29,6 +34,9 @@ export function useDorks() {
 
   useEffect(() => {
     let cancelled = false;
+    loadFirstPage().then((page) => {
+      if (!cancelled && page) setPreview(page);
+    });
     loadCorpus()
       .then((loaded) => {
         if (cancelled) return;
@@ -41,7 +49,7 @@ export function useDorks() {
         setError(err instanceof Error ? err.message : "Failed to load dorks");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setCorpusSettled(true);
       });
     return () => {
       cancelled = true;
@@ -55,20 +63,21 @@ export function useDorks() {
   }, []);
 
   const data: DorkQueryResult | null = useMemo(() => {
-    if (!corpus || !meta) return null;
-    return queryDorks(corpus, meta, {
+    return browseResult(corpus && meta ? { dorks: corpus, meta } : null, preview, {
       query: debouncedQuery,
       categories,
       risk,
       tag,
       sort,
       page,
-      perPage: PER_PAGE,
+      perPage: DEFAULT_BROWSE_QUERY.perPage,
     });
-  }, [corpus, meta, debouncedQuery, categories, risk, tag, sort, page]);
+  }, [corpus, meta, preview, debouncedQuery, categories, risk, tag, sort, page]);
+
+  const loading = !corpusSettled && data === null && !error;
 
   const retryLoad = () => {
-    setLoading(true);
+    setCorpusSettled(false);
     setError(null);
     setLoadAttempt((attempt) => attempt + 1);
   };

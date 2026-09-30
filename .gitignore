@@ -49,3 +49,4 @@ next-env.d.ts
 
 # staged copy of src/data/dorks.json for the static export
 /public/dorks.json
+/public/dorks-first-page.json

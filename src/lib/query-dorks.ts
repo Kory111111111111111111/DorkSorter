@@ -31,6 +31,44 @@ export interface DorkQueryResult {
   riskCounts: Record<string, number>;
 }
 
+/** Default browse view: risk sort, page 1, no filters. The precomputed first page uses this exact query. */
+export const DEFAULT_BROWSE_QUERY: DorkQuery = {
+  query: "",
+  categories: [],
+  risk: "",
+  tag: "",
+  sort: "risk",
+  page: 1,
+  perPage: 50,
+};
+
+export function isDefaultBrowseQuery(params: DorkQuery): boolean {
+  return (
+    params.query.trim() === "" &&
+    params.categories.length === 0 &&
+    params.risk === "" &&
+    params.tag === "" &&
+    params.sort === "risk" &&
+    params.page === 1 &&
+    params.perPage === DEFAULT_BROWSE_QUERY.perPage
+  );
+}
+
+/**
+ * Live results when the corpus is loaded. Before that, only the default browse
+ * view may use the precomputed page — any other query returns null so a
+ * 50-row preview is never filtered as if it were the full index.
+ */
+export function browseResult(
+  loaded: { dorks: Dork[]; meta: CorpusMeta } | null,
+  preview: DorkQueryResult | null,
+  params: DorkQuery,
+): DorkQueryResult | null {
+  if (loaded) return queryDorks(loaded.dorks, loaded.meta, params);
+  if (preview && isDefaultBrowseQuery(params)) return preview;
+  return null;
+}
+
 function riskRank(level: RiskLevel): number {
   const rank = RISK_ORDER.indexOf(level);
   return rank === -1 ? RISK_ORDER.length : rank;

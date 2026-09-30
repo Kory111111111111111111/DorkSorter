@@ -11,9 +11,10 @@ heuristics, tags each query with its technique, and assigns a risk level
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS v4 + shadcn/ui (Base UI primitives)
 - Single static dataset (`src/data/dorks.json`). The build writes a compact
-  index to `public/dorks.json` (dictionary of labels, one short row per dork).
-  The browser downloads that once and runs search, filter, sort, and pagination
-  locally so the site can be hosted on GitHub Pages
+  index to `public/dorks.json` (dictionary of labels, one short row per dork)
+  and the default first page to `public/dorks-first-page.json`. The browser
+  paints that page immediately, then downloads the index once and runs search,
+  filter, sort, and pagination locally so the site can be hosted on GitHub Pages
 
 ## Features
 

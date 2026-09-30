@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Dork } from "@/lib/dork";
-import { queryDorks, type CorpusMeta } from "@/lib/query-dorks";
+import { browseResult, DEFAULT_BROWSE_QUERY, queryDorks, type CorpusMeta } from "@/lib/query-dorks";
 
 function dork(partial: Pick<Dork, "id" | "query" | "category" | "riskLevel"> & Partial<Dork>): Dork {
   return {
@@ -23,15 +23,7 @@ const corpus: Dork[] = [
   dork({ id: "3", query: "index of", category: "General", subcategory: "Listings", riskLevel: "low" }),
 ];
 
-const base = {
-  query: "",
-  categories: [] as string[],
-  risk: "",
-  tag: "",
-  sort: "risk" as const,
-  page: 1,
-  perPage: 50,
-};
+const base = DEFAULT_BROWSE_QUERY;
 
 describe("queryDorks", () => {
   it("sorts by risk without mutating the corpus", () => {
@@ -80,5 +72,16 @@ describe("queryDorks", () => {
     assert.equal(result.perPage, 20);
     assert.equal(result.dorks.length, 1);
     assert.equal(result.totalPages, 2);
+  });
+
+  it("serves the precomputed page only for the default browse query", () => {
+    const live = queryDorks(corpus, meta, base);
+    const preview = JSON.parse(JSON.stringify(live)) as typeof live;
+    assert.deepEqual(preview, live);
+    assert.deepEqual(browseResult({ dorks: corpus, meta }, preview, base), live);
+    assert.equal(browseResult(null, preview, base), preview);
+    assert.equal(browseResult(null, preview, { ...base, categories: ["LFI"] }), null);
+    assert.equal(browseResult(null, preview, { ...base, page: 2 }), null);
+    assert.equal(browseResult(null, preview, { ...base, sort: "query" }), null);
   });
 });
